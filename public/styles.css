@@ -5,9 +5,10 @@ body {
     align-items: center;
     height: 100vh;
     margin: 0;
+    flex-direction: column;
 }
 
-.login-container {
+.login-container, .reset-container {
     border: 1px solid #ccc;
     padding: 20px;
     border-radius: 5px;
@@ -19,4 +20,34 @@ button {
     width: 100%;
     padding: 10px;
     font-size: 16px;
+}
+
+.forgot-password {
+    display: block;
+    margin-top: 10px;
+    color: blue;
+    text-decoration: none;
+}
+
+.admin-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 350px;
+    margin: auto;
+    margin-top: 50px;
+}
+
+.admin-container button {
+    padding: 15px;
+    font-size: 18px;
+    border-radius: 12px;
+    background-color: lightgray;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.admin-container button:hover {
+    background-color: #dcdcdc;
 }

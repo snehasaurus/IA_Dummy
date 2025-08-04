@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Management</title>
+</head>
+<body style="background-color: #a2c2f4; font-family: Arial, sans-serif;">
+
+  <h1 style="text-align: center; font-size: 32px; margin-top: 20px;">user management</h1>
+
+  <div style="width: 80%; margin: 20px auto; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+  <label>
+    Filter by Department:
+    <select id="department-filter">
+      <option value="all">All Departments</option>
+    </select>
+  </label>
+  <label>
+    Filter by Role:
+    <select id="role-filter">
+      <option value="all">All Roles</option>
+      <option value="admin">admin</option>
+      <option value="General Employee">General Employee</option>
+      <option value="Department Head">Department Head</option>
+    </select>
+  </label>
+  <label>
+    Sort by Name:
+    <select id="sort-filter" onchange="applyFilters()">
+      <option value="asc">A to Z</option>
+      <option value="desc">Z to A</option>
+    </select>
+  </label>
+  <label>
+    Search:
+    <input type="text" id="search-input" placeholder="Search by name, role, or department" oninput="applyFilters()">
+  </label>
+  <button onclick="applyFilters()">Apply Filters</button>
+</div>
+
+
+  <table border="1" cellpadding="10" style="width: 80%; margin: 0 auto; border-collapse: collapse; text-align: center;">
+    <thead style="background-color: #4b7bec; color: white;">
+      <tr>
+        <th onclick="toggleSort()">Username ⬍</th>
+        <th>Role</th>
+        <th>Department</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="users-table"></tbody>
+  </table>
+
+  <script>
+    let users = [];
+    let sortAsc = true;
+
+    async function fetchUsers() {
+      try {
+        const res = await fetch('/api/users');
+        const data = await res.json();
+        users = data;
+        populateDepartmentFilter(data);
+        renderTable(data);
+      } catch (err) {
+        console.error('Error fetching users:', err);
+      }
+    }
+
+    function populateDepartmentFilter(data) {
+      const select = document.getElementById('department-filter');
+      const departments = [...new Set(data.map(u => u.department_name).filter(Boolean))];
+      select.innerHTML = '<option value="all">All Departments</option>';
+      departments.forEach(dept => {
+        const option = document.createElement('option');
+        option.value = dept;
+        option.textContent = dept;
+        select.appendChild(option);
+      });
+    }
+
+    function renderTable(data) {
+      const table = document.getElementById('users-table');
+      table.innerHTML = '';
+      data.forEach(user => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${user.username}</td>
+          <td>${user.role}</td>
+          <td>${user.department_name || '—'}</td>
+          <td>
+            <button onclick="editUser(${user.id}, '${user.username}', '${user.role}', '${user.department_name || ''}')">Edit</button>
+            <button onclick="deleteUser(${user.id})">Delete</button>
+          </td>
+        `;
+        table.appendChild(tr);
+      });
+    }
+
+  function applyFilters() {
+  const dept = document.getElementById('department-filter').value;
+  const role = document.getElementById('role-filter').value;
+  const sort = document.getElementById('sort-filter').value;
+  const searchTerm = document.getElementById('search-input').value.toLowerCase();
+
+  let filtered = [...users];
+
+  if (dept !== 'all') {
+    filtered = filtered.filter(u => u.department_name === dept);
+  }
+  if (role !== 'all') {
+    filtered = filtered.filter(u => u.role === role);
+  }
+
+  // New: Search filter
+  if (searchTerm.trim() !== '') {
+    filtered = filtered.filter(u =>
+      u.username.toLowerCase().includes(searchTerm) ||
+      (u.role && u.role.toLowerCase().includes(searchTerm)) ||
+      (u.department_name && u.department_name.toLowerCase().includes(searchTerm))
+    );
+  }
+
+  filtered.sort((a, b) =>
+    sort === 'asc'
+      ? a.username.localeCompare(b.username)
+      : b.username.localeCompare(a.username)
+  );
+
+  renderTable(filtered);
+}
+
+
+
+    function toggleSort() {
+      users.sort((a, b) => {
+        return sortAsc
+          ? a.username.localeCompare(b.username)
+          : b.username.localeCompare(a.username);
+      });
+      sortAsc = !sortAsc;
+      applyFilters();
+    }
+
+    function editUser(id, username, role, departmentName) {
+      const newUsername = prompt('Edit username:', username);
+      const newRole = prompt('Edit role (admin / General Employee / Department Head):', role);
+      const newDepartment = prompt('Edit department name:', departmentName);
+
+      if (!newUsername || !newRole || !newDepartment) return;
+
+      fetch('/api/users/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, username: newUsername, role: newRole, department_name: newDepartment })
+      }).then(() => fetchUsers());
+    }
+
+    function deleteUser(id) {
+      if (!confirm('Are you sure you want to delete this user?')) return;
+
+      fetch('/api/users/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      }).then(() => fetchUsers());
+    }
+
+    fetchUsers();
+  </script>
+</body>
+</html>

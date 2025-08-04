@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Budget Requests and Approvals</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body style="background-color: #a2c2f4; font-family: Arial, sans-serif;">
+
+  <h1 style="text-align: center; font-size: 32px; margin-top: 20px;">budget requests and approvals</h1>
+
+  <table border="1" cellpadding="10" style="width: 80%; margin: 20px auto; border-collapse: collapse; text-align: center;">
+    <thead style="background-color: #4b7bec; color: white;">
+      <tr>
+        <th>Department</th>
+        <th>Department Head</th>
+        <th>Amount</th>
+        <th>Approve/Deny</th>
+        <th>Comments</th>
+      </tr>
+    </thead>
+    <tbody id="budget-table"></tbody>
+  </table>
+
+  <script>
+    // Fetch and display department data
+    fetch('/admin-dashboard-data')
+      .then(res => res.json())
+      .then(data => {
+        const table = document.getElementById('budget-table');
+        data.departments.forEach(row => {
+          const tr = document.createElement('tr');
+
+          // Format budget status
+          const statusCell = row.budget_status
+            ? `${row.budget_status} <br><button onclick="editStatus('${row.department_id}', '${row.budget_status}')">Edit status?</button>`
+            : `<button onclick="editStatus('${row.department_id}', '')">Add status?</button>`;
+
+          // Format admin comment
+          const commentCell = row.admin_comments
+            ? `${row.admin_comments} <br><button onclick="editComment('${row.department_id}', \`${row.admin_comments}\`)">Edit comment?</button>`
+            : `<button onclick="editComment('${row.department_id}', '')">Add comment?</button>`;
+
+          tr.innerHTML = `
+            <td>${row.department_name}</td>
+            <td>${row.department_head}</td>
+            <td>$${row.requested_budget}</td>
+            <td>${statusCell}</td>
+            <td>${commentCell}</td>
+          `;
+          table.appendChild(tr);
+        });
+      });
+
+    // Add or edit budget status
+    function editStatus(deptId, currentStatus) {
+      const newStatus = prompt('Enter status (Approved / Denied / Pending):', currentStatus);
+      if (newStatus !== null && newStatus.trim() !== '') {
+        fetch('/update-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ department_id: deptId, status: newStatus })
+        }).then(() => location.reload());
+      }
+    }
+
+    // Add or edit admin comment
+    function editComment(deptId, currentComment) {
+      const newComment = prompt('Enter your comment:', currentComment);
+      if (newComment !== null && newComment.trim() !== '') {
+        fetch('/update-comment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ department_id: deptId, comment: newComment })
+        }).then(() => location.reload());
+      }
+    }
+  </script>
+</body>
+</html>

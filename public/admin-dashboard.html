@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js for the graph -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body style="background-color: #a2c2f4; color: black; font-family: Arial, sans-serif;">
+
+    <!-- Page Heading -->
+    <h1 style="text-align: center; font-size: 36px; margin-top: 20px;">WELCOME TO THE ADMIN DASHBOARD</h1>
+
+    <!-- Department Table -->
+    <h3 style="text-align: center; margin-top: 30px;">Department Budget Information</h3>
+    <table border="1" cellpadding="10" style="width: 80%; margin: 0 auto; border-collapse: collapse;">
+        <thead style="background-color: #4b7bec; color: white;">
+            <tr>
+                <th style="padding: 12px;">Department</th>
+                <th style="padding: 12px;">Department Head</th>
+                <th style="padding: 12px;">Amount</th>
+                <th style="padding: 12px;">Comments</th>
+            </tr>
+        </thead>
+        <tbody id="department-table">
+            <!-- Table rows will be populated dynamically with server data -->
+        </tbody>
+    </table>
+
+    <!-- Graph: Planned vs Actual -->
+    <h3 style="text-align: center; margin-top: 40px;">Planned vs Actual Spending</h3>
+    <canvas id="spendingChart" width="400" height="200" style="margin: 0 auto; display: block;"></canvas>
+
+    <!-- Real-time Spending Updates Button -->
+    <div style="text-align: center; margin-top: 30px;">
+        <button onclick="window.location.href='/real-time-updates'" style="padding: 10px 20px; background-color: #4b7bec; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            Email Me Real-Time Spending Updates
+        </button>
+    </div>
+
+    <script>
+        // Function to fetch data for the table and graph from the server
+        fetch('/admin-dashboard-data')
+            .then(response => response.json())
+            .then(data => {
+                // Populate table with department data
+                const tableBody = document.getElementById('department-table');
+                data.departments.forEach(department => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="padding: 12px;">${department.department_name}</td>
+                        <td style="padding: 12px;">${department.department_head}</td>
+                        <td style="padding: 12px;">${department.requested_budget}</td>
+                        <td style="padding: 12px;">${department.admin_comments || 'No comments'}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                // Prepare data for the graph
+                const labels = data.departments.map(dep => dep.department_name);
+                const plannedData = data.departments.map(dep => dep.requested_budget);
+                const actualData = data.expenditures.map(exp => exp.actual_spent);
+
+                // Create the graph using Chart.js
+                const ctx = document.getElementById('spendingChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Planned Spending',
+                                data: plannedData,
+                                backgroundColor: '#FF6384',
+                                borderColor: '#FF6384',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Actual Spending',
+                                data: actualData,
+                                backgroundColor: '#36A2EB',
+                                borderColor: '#36A2EB',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            });
+    </script>
+</body>
+</html>
